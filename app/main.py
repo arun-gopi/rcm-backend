@@ -1,0 +1,106 @@
+from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+from timing_asgi import TimingMiddleware, TimingClient  # type: ignore
+from timing_asgi.integrations import StarletteScopeToName  # type: ignore
+
+from app.core import config
+from app.core.database.engine import init_db
+from app.features.users.routes import router as user_router
+from app.features.users.dependencies import get_authorization_header
+from app.utils import get_logger
+
+
+log = get_logger(__name__)
+log.info("Initializing server")
+app = FastAPI(
+    title="RCM Backend",
+    description="FastAPI backend with Appwrite authentication",
+    version="0.1.0",
+    docs_url="/docs" if config.ENABLE_DOCS else None,
+    redoc_url="/redoc" if config.ENABLE_DOCS else None,
+    openapi_url="/openapi.json" if config.ENABLE_DOCS else None
+)
+limiter = Limiter(key_func=get_authorization_header)
+app.state.limiter = limiter
+
+
+class PrintTimings(TimingClient):
+    def timing(self, metric_name, timing, tags):
+        log.debug(dict(route=metric_name.removeprefix("main.app.features."), timing=timing, tags=tags))
+
+
+app.add_middleware(TimingMiddleware, client=PrintTimings(), metric_namer=StarletteScopeToName("main", app))
+
+if config.ENABLE_DOCS:
+    log.warning("Docs enabled")
+if config.ALLOW_ORIGIN:
+    log.warning("Setting allow origin to %s", config.ALLOW_ORIGIN)
+    origins = [config.ALLOW_ORIGIN]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(_request: Request, exc: RequestValidationError):
+    errors = dict()
+    for error in exc.errors():
+        if "loc" not in error or "msg" not in error:
+            continue
+        key = error["loc"][-1]
+        if key == "__root__":
+            key = "root"
+        errors[key] = error["msg"]
+    log.info("Request validation error %s", errors)
+    return JSONResponse(status_code=400, content=jsonable_encoder(errors))
+
+
+@app.exception_handler(RateLimitExceeded)
+def rate_limit_exceeded_handler(_request: Request, _exc: RateLimitExceeded) -> Response:
+    return JSONResponse({"error": "You are going too fast"}, status_code=429)
+
+
+@app.on_event("startup")
+async def startup():
+    """Initialize database on application startup."""
+    log.info("Initializing database...")
+    await init_db()
+    log.info("Database initialized successfully")
+
+
+@app.get("/")
+async def root():
+    """Root endpoint - API health check."""
+    return {
+        "message": "RCM Backend API",
+        "version": "0.1.0",
+        "status": "online",
+        "docs": "/docs" if config.ENABLE_DOCS else None,
+        "authentication": {
+            "info": "Protected endpoints require Bearer token in Authorization header",
+            "protected_endpoints": ["/users/me", "/users/{id}/admin"],
+            "public_endpoints": ["/users", "/users/{id}"]
+        }
+    }
+
+
+@app.get("/health")
+async def health():
+    """Health check endpoint."""
+    return {"status": "healthy"}
+
+
+# Include routers
+app.include_router(user_router, prefix="/users", tags=["users"])
+# Alias for singular form (if frontend uses /user/me)
+app.include_router(user_router, prefix="/user", tags=["users"], include_in_schema=False)
