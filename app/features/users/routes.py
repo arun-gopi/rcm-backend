@@ -2,7 +2,7 @@
 User feature routes.
 """
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,7 @@ from app.core.database.engine import get_db
 from app.features.users.models import User
 from app.features.users.schemas import UserResponse, UserPublic, UserUpdate
 from app.features.users.dependencies import get_current_user, get_current_admin_user
+from app.features.labels.models import Label, user_labels
 
 
 router = APIRouter(tags=["users"])
@@ -65,15 +66,19 @@ async def get_user_by_id(
 async def list_users(
     db: Annotated[AsyncSession, Depends(get_db)],
     skip: int = 0,
-    limit: int = 50
+    limit: int = 50,
+    labels: list[str] = Query(default=[], description="Filter by label IDs")
 ):
-    """List all active users (public info only)."""
-    result = await db.execute(
-        select(User)
-        .where(User.is_active == True)
-        .offset(skip)
-        .limit(limit)
-    )
+    """List all active users (public info only). Can filter by labels."""
+    query = select(User).where(User.is_active == True)
+    
+    # Filter by labels if provided
+    if labels:
+        # Join with user_labels and filter by label IDs
+        query = query.join(user_labels).where(user_labels.c.label_id.in_(labels))
+    
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
     users = result.scalars().all()
     return users
 

@@ -1,0 +1,1 @@
+"""Labels feature module."""

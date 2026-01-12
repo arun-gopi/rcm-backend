@@ -41,7 +41,8 @@ copy .env.example .env
 # Edit .env with your configuration
 
 # Run development server
-uvicorn app.main:app --reload
+#uvicorn app.main:app --reload
+uv run server.py
 ```
 
 ### Package Management
@@ -122,10 +123,14 @@ async def admin_route(admin: User = Depends(get_current_admin_user)):
 - Return consistent response structures
 - Handle exceptions with FastAPI exception handlers
 
+### .md Files
+- Document features in `docs/` directory using markdown
+- Include API usage examples, database schema, and important notes
+
 ## Key Files
 - [pyproject.toml](../pyproject.toml) - Dependencies and project metadata
 - [app/main.py](../app/main.py) - Application entry point
-- `server.py` - Currently unused (empty file)
+- `server.py` - Server entry point
 
 ## Testing
 - Add pytest to dependencies when implementing tests

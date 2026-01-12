@@ -3,6 +3,11 @@ Pydantic schemas for user-related requests and responses.
 """
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, Field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.features.organizations.schemas import OrganizationPublic
+    from app.features.labels.schemas import LabelPublic
 
 
 class UserBase(BaseModel):
@@ -26,7 +31,7 @@ class UserUpdate(BaseModel):
 class UserResponse(UserBase):
     """Schema for user responses."""
     id: str
-    appwrite_id: str
+    #appwrite_id: str
     avatar_url: str | None = None
     bio: str | None = None
     is_active: bool
@@ -34,6 +39,12 @@ class UserResponse(UserBase):
     last_login_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
+    
+    # Organization information
+    current_organization_id: str | None = None
+    current_organization: "OrganizationPublic | None" = None
+    organizations: list["OrganizationPublic"] = []
+    labels: list["LabelPublic"] = []
     
     model_config = {"from_attributes": True}
 
@@ -46,3 +57,9 @@ class UserPublic(BaseModel):
     bio: str | None = None
     
     model_config = {"from_attributes": True}
+
+
+# Import at the end to avoid circular dependency issues
+from app.features.organizations.schemas import OrganizationPublic  # noqa: E402
+from app.features.labels.schemas import LabelPublic  # noqa: E402
+UserResponse.model_rebuild()

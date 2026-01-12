@@ -12,6 +12,8 @@ from timing_asgi.integrations import StarletteScopeToName  # type: ignore
 from app.core import config
 from app.core.database.engine import init_db
 from app.features.users.routes import router as user_router
+from app.features.organizations.routes import router as organization_router
+from app.features.labels.routes import router as label_router
 from app.features.users.dependencies import get_authorization_header
 from app.utils import get_logger
 
@@ -88,8 +90,8 @@ async def root():
         "docs": "/docs" if config.ENABLE_DOCS else None,
         "authentication": {
             "info": "Protected endpoints require Bearer token in Authorization header",
-            "protected_endpoints": ["/users/me", "/users/{id}/admin"],
-            "public_endpoints": ["/users", "/users/{id}"]
+            "protected_endpoints": ["/users/me", "/users/{id}/admin", "/organizations/*"],
+            "public_endpoints": ["/users", "/users/{id}", "/organizations", "/organizations/{id}"]
         }
     }
 
@@ -104,3 +106,11 @@ async def health():
 app.include_router(user_router, prefix="/users", tags=["users"])
 # Alias for singular form (if frontend uses /user/me)
 app.include_router(user_router, prefix="/user", tags=["users"], include_in_schema=False)
+
+# Organization routes
+app.include_router(organization_router, prefix="/organizations", tags=["organizations"])
+# Alias for singular form
+app.include_router(organization_router, prefix="/organization", tags=["organizations"], include_in_schema=False)
+
+# Label routes
+app.include_router(label_router, prefix="/labels", tags=["labels"])
