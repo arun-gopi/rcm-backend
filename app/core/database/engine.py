@@ -70,6 +70,16 @@ async def init_db():
     """
     from app.core.database.base import Base
     
+    # Import all models to ensure they're registered with SQLAlchemy
+    from app.features.users.models import User  # noqa: F401
+    from app.features.organizations.models import (  # noqa: F401
+        Organization, OrganizationAddress, OrganizationAccessRequest
+    )
+    from app.features.labels.models import Label  # noqa: F401
+    from app.features.permissions.models import (  # noqa: F401
+        Permission, Role, Group, AuditLog
+    )
+    
     async with engine.begin() as conn:
         # For development: drop and recreate all tables
         # await conn.run_sync(Base.metadata.drop_all)

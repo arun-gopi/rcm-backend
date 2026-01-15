@@ -14,6 +14,7 @@ from app.core.database.engine import init_db
 from app.features.users.routes import router as user_router
 from app.features.organizations.routes import router as organization_router
 from app.features.labels.routes import router as label_router
+from app.features.permissions.routes import router as permission_router
 from app.features.users.dependencies import get_authorization_header
 from app.utils import get_logger
 
@@ -90,8 +91,14 @@ async def root():
         "docs": "/docs" if config.ENABLE_DOCS else None,
         "authentication": {
             "info": "Protected endpoints require Bearer token in Authorization header",
-            "protected_endpoints": ["/users/me", "/users/{id}/admin", "/organizations/*"],
+            "protected_endpoints": ["/users/me", "/users/{id}/admin", "/organizations/*", "/permissions/*"],
             "public_endpoints": ["/users", "/users/{id}", "/organizations", "/organizations/{id}"]
+        },
+        "features": {
+            "permissions": "Organization-scoped RBAC/ABAC with roles, groups, and dynamic conditions",
+            "organizations": "Multi-tenant organization management with NPI/TIN",
+            "users": "User management with Appwrite authentication",
+            "labels": "Flexible labeling system for organizations and users"
         }
     }
 
@@ -114,3 +121,6 @@ app.include_router(organization_router, prefix="/organization", tags=["organizat
 
 # Label routes
 app.include_router(label_router, prefix="/labels", tags=["labels"])
+
+# Permission routes (RBAC/ABAC)
+app.include_router(permission_router, prefix="/permissions", tags=["permissions"])
