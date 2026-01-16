@@ -15,6 +15,11 @@ from app.features.users.routes import router as user_router
 from app.features.organizations.routes import router as organization_router
 from app.features.labels.routes import router as label_router
 from app.features.permissions.routes import router as permission_router
+from app.features.clients.routes import router as client_router
+from app.features.providers.routes import router as provider_router
+from app.features.payors.routes import router as payor_router
+from app.features.services.routes import router as service_router
+from app.features.csv_import.routes import router as csv_import_router
 from app.features.users.dependencies import get_authorization_header
 from app.utils import get_logger
 
@@ -91,14 +96,23 @@ async def root():
         "docs": "/docs" if config.ENABLE_DOCS else None,
         "authentication": {
             "info": "Protected endpoints require Bearer token in Authorization header",
-            "protected_endpoints": ["/users/me", "/users/{id}/admin", "/organizations/*", "/permissions/*"],
+            "protected_endpoints": [
+                "/users/me", "/users/{id}/admin",
+                "/organizations/*", "/permissions/*",
+                "/clients/*", "/providers/*", "/payors/*", "/services/*", "/csv-import/*"
+            ],
             "public_endpoints": ["/users", "/users/{id}", "/organizations", "/organizations/{id}"]
         },
         "features": {
             "permissions": "Organization-scoped RBAC/ABAC with roles, groups, and dynamic conditions",
             "organizations": "Multi-tenant organization management with NPI/TIN",
             "users": "User management with Appwrite authentication",
-            "labels": "Flexible labeling system for organizations and users"
+            "labels": "Flexible labeling system for organizations and users",
+            "clients": "Client management with location tracking",
+            "providers": "Healthcare provider management with NPI",
+            "payors": "Insurance payor/payer management",
+            "services": "Service entry and financial tracking for RCM",
+            "csv_import": "Bulk CSV import for service entries with validation"
         }
     }
 
@@ -124,3 +138,18 @@ app.include_router(label_router, prefix="/labels", tags=["labels"])
 
 # Permission routes (RBAC/ABAC)
 app.include_router(permission_router, prefix="/permissions", tags=["permissions"])
+
+# Client routes
+app.include_router(client_router, prefix="/clients", tags=["clients"])
+
+# Provider routes
+app.include_router(provider_router, prefix="/providers", tags=["providers"])
+
+# Payor routes
+app.include_router(payor_router, prefix="/payors", tags=["payors"])
+
+# Service entry routes
+app.include_router(service_router, prefix="/services", tags=["services"])
+
+# CSV import routes
+app.include_router(csv_import_router, prefix="/csv-import", tags=["csv-import"])

@@ -121,7 +121,16 @@ DEFAULT_ROLES = {
         "permissions": [
             "claims:create", "claims:read", "claims:update", "claims:submit",
             "patients:read", "patients:update",
-            "billing:read",
+            "billing:read", "billing:update",
+        ]
+    },
+    "rcm_specialist": {
+        "description": "Revenue Cycle Management specialist",
+        "organization_id": None,
+        "permissions": [
+            "claims:create", "claims:read", "claims:update", "claims:submit",
+            "patients:read", "patients:update",
+            "billing:read", "billing:update", "billing:process",
         ]
     },
     "claims_viewer": {
