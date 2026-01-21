@@ -20,7 +20,15 @@ async def create_payor(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new payor."""
+    """
+    Create a new payor record in the database.
+    
+    Parameters:
+        payor_data (PayorCreate): Input data used to construct the new payor.
+    
+    Returns:
+        Payor: The created Payor instance with database-assigned fields populated (e.g., `id`).
+    """
     payor = Payor(**payor_data.model_dump())
     db.add(payor)
     await db.commit()
@@ -34,7 +42,18 @@ async def get_payor(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get a specific payor by ID."""
+    """
+    Retrieve a payor by its unique identifier.
+    
+    Parameters:
+        payor_id (str): The payor's unique identifier.
+    
+    Returns:
+        payor (Payor): The Payor ORM instance matching the given ID.
+    
+    Raises:
+        HTTPException: 404 if no payor with the given ID exists.
+    """
     payor = await db.scalar(
         select(Payor).where(Payor.id == payor_id)
     )
@@ -51,7 +70,17 @@ async def list_payors(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List all payors, optionally filtered by organization."""
+    """
+    Retrieve a list of payors, optionally filtered by organization.
+    
+    Parameters:
+        organization_id (str | None): If provided, only payors belonging to this organization are returned.
+        skip (int): Number of records to skip for pagination.
+        limit (int): Maximum number of records to return.
+    
+    Returns:
+        list[Payor]: List of Payor ORM instances matching the query.
+    """
     query = select(Payor)
     if organization_id:
         query = query.where(Payor.organization_id == organization_id)

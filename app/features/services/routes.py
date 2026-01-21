@@ -24,7 +24,18 @@ async def create_service_entry(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new service entry with optional financials."""
+    """
+    Create a new service entry and optionally attach financials.
+    
+    Parameters:
+        service_data (ServiceEntryCreate): Data for the new service entry; may include `financials` to create associated ServiceFinancials.
+    
+    Returns:
+        ServiceEntry: The created service entry populated with any generated fields (e.g., `id`) and refreshed relations.
+    
+    Raises:
+        HTTPException: 400 if a service entry with the same `external_id` already exists.
+    """
     # Check if external_id already exists
     existing = await db.scalar(
         select(ServiceEntry).where(ServiceEntry.external_id == service_data.external_id)
@@ -82,13 +93,19 @@ async def list_service_entries(
     current_user: User = Depends(get_current_user)
 ):
     """
-    List service entries with optional filters.
+    List service entries matching optional filters.
     
-    - organization_id: Filter by organization
-    - client_id: Filter by client
-    - provider_id: Filter by provider
-    - date_from: Filter by date_of_service >= this date (YYYY-MM-DD)
-    - date_to: Filter by date_of_service <= this date (YYYY-MM-DD)
+    Parameters:
+    	organization_id (str | None): Filter by organization ID.
+    	client_id (str | None): Filter by client ID.
+    	provider_id (str | None): Filter by provider ID.
+    	date_from (str | None): Include entries with date_of_service on or after this date (YYYY-MM-DD).
+    	date_to (str | None): Include entries with date_of_service on or before this date (YYYY-MM-DD).
+    	skip (int): Number of records to skip for pagination.
+    	limit (int): Maximum number of records to return.
+    
+    Returns:
+    	service_entries (list[ServiceEntry]): List of ServiceEntry records matching the provided filters, ordered by date_of_service descending.
     """
     query = select(ServiceEntry)
     
@@ -119,11 +136,19 @@ async def assign_service_entry(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Assign a service entry to a user for follow-up.
+    Create an active assignment for a service entry and record an internal assignment comment.
     
-    - Deactivates any previous active assignments
-    - Creates a new assignment record
-    - Automatically adds a comment about the assignment
+    Creates a new active ServiceAssignment for the given service entry, deactivates any previous active assignments for that entry, and adds an internal ServiceComment describing the assignment (including follow-up date and optional note).
+    
+    Parameters:
+        service_id (str): ID of the service entry to assign.
+        assignment_data (ServiceAssignmentCreate): Assignment details (assignee, follow-up date, optional note).
+    
+    Returns:
+        ServiceAssignment: The newly created and persisted assignment.
+    
+    Raises:
+        HTTPException: 404 if the specified service entry does not exist.
     """
     # Check if service entry exists
     service = await db.scalar(
@@ -184,11 +209,19 @@ async def reassign_service_entry(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Reassign a service entry to another user.
+    Reassigns a service entry to a different user and records the reassignment as an internal comment.
     
-    - Deactivates current assignment
-    - Creates new assignment with the new user
-    - Adds a comment with the reassignment reason
+    Parameters:
+        reassign_data (ServiceReassignRequest): Data for the reassignment, including:
+            - `new_assigned_to_user_id`: ID of the user to assign the service entry to.
+            - `followup_date` (optional): Follow-up date for the new assignment.
+            - `reason`: Text explaining why the reassignment is performed.
+    
+    Raises:
+        HTTPException: If the service entry with the given `service_id` does not exist.
+    
+    Returns:
+        ServiceAssignment: The newly created active assignment for the service entry.
     """
     # Check if service entry exists
     service = await db.scalar(
@@ -250,7 +283,12 @@ async def get_current_assignment(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get the current active assignment for a service entry."""
+    """
+    Return the current active assignment for the given service entry.
+    
+    Returns:
+        ServiceAssignment | None: The active ServiceAssignment for the service entry identified by `service_id`, or `None` if no active assignment exists.
+    """
     assignment = await db.scalar(
         select(ServiceAssignment).where(
             and_(
@@ -268,7 +306,12 @@ async def get_assignment_history(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get full assignment history for a service entry."""
+    """
+    Return the full assignment history for a service entry ordered by creation time descending.
+    
+    Returns:
+        list[ServiceAssignment]: Assignments for the specified service entry, newest first.
+    """
     result = await db.execute(
         select(ServiceAssignment)
         .where(ServiceAssignment.service_entry_id == service_id)
@@ -287,9 +330,19 @@ async def add_comment(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Add a comment/note to a service entry.
+    Attach a comment to the specified service entry.
     
-    Comment types: note, call, email, payment, adjustment, etc.
+    Creates a ServiceComment using the provided comment data and returns the persisted comment.
+    
+    Parameters:
+        service_id (str): ID of the service entry to comment on.
+        comment_data (ServiceCommentCreate): Payload containing `comment_text`, `comment_type`, and `is_internal`.
+    
+    Returns:
+        ServiceComment: The newly created and refreshed comment record.
+    
+    Raises:
+        HTTPException: 404 if the service entry with the given `service_id` does not exist.
     """
     # Check if service entry exists
     service = await db.scalar(
@@ -320,10 +373,14 @@ async def get_comments(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get comments for a service entry.
+    Retrieve comments for a service entry.
     
-    - comment_type: Filter by type (note, call, email, etc.)
-    - limit: Maximum number of comments to return (default 50)
+    Parameters:
+        comment_type (str | None): Optional comment type filter (e.g., "note", "call", "email").
+        limit (int): Maximum number of comments to return (default 50).
+    
+    Returns:
+        list[ServiceComment]: Comments for the specified service entry ordered by newest first, limited to `limit`.
     """
     query = select(ServiceComment).where(ServiceComment.service_entry_id == service_id)
     
@@ -343,12 +400,16 @@ async def get_service_entry_detailed(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get detailed service entry with current assignment and recent comments.
+    Return a detailed view of a service entry including its financials, current assignment, and recent comments.
+    
+    Parameters:
+        service_id (str): ID of the service entry to retrieve.
     
     Returns:
-        - Service entry with financials
-        - Current active assignment
-        - Last 10 comments
+        ServiceEntryDetailedResponse: The service entry with embedded `current_assignment` (the active assignment or `None`) and `recent_comments` (up to 10 most recent comments).
+    
+    Raises:
+        HTTPException: 404 if the service entry with the given ID does not exist.
     """
     # Get service entry
     service = await db.scalar(
@@ -395,9 +456,15 @@ async def get_my_assignments(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get all service entries assigned to the current user.
+    List service entries assigned to the current user with their current active assignment and recent comments.
     
-    - followup_overdue: If true, only returns entries with overdue follow-up dates
+    Parameters:
+        followup_overdue (bool): If true, include only entries whose active assignment has a follow-up date earlier than today.
+        skip (int): Number of entries to skip for pagination.
+        limit (int): Maximum number of entries to return.
+    
+    Returns:
+        list[ServiceEntryDetailedResponse]: Service entries assigned to the current user; each item includes the current active assignment (or None) and up to five most recent comments.
     """
     from datetime import date
     

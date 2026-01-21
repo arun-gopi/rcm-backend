@@ -8,7 +8,12 @@ import ulid
 from app.core.database.base import Base, TimestampMixin
 
 def generate_ulid() -> str:
-    """Generate a new ULID string."""
+    """
+    Generate a new ULID string.
+    
+    Returns:
+        ulid_str (str): A new ULID value as a 26-character Crockford Base32 string.
+    """
     return ulid.ulid()
 
 class Client(Base, TimestampMixin):
@@ -42,6 +47,14 @@ class Client(Base, TimestampMixin):
     )
 
     def __repr__(self):
+        """
+        Return a developer-facing string representation of the client including its id and full name.
+        
+        The representation is formatted for debugging and logging.
+        
+        Returns:
+            str: A string containing the client's `id` and the full name in the form "<Client(id=<id>, name='First Last')>".
+        """
         return f"<Client(id={self.id}, name='{self.first_name} {self.last_name}')>"
 
 
@@ -77,4 +90,10 @@ class ClientLocation(Base, TimestampMixin):
     client = relationship("Client", back_populates="locations")
 
     def __repr__(self):
+        """
+        Return a concise developer-facing representation of the ClientLocation including its id, client_id, and name.
+        
+        Returns:
+            str: Formatted string like "<ClientLocation(id=<id>, client_id=<client_id>, name='<name>')>"
+        """
         return f"<ClientLocation(id={self.id}, client_id={self.client_id}, name='{self.name}')>"

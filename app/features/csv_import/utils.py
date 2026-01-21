@@ -7,10 +7,12 @@ from typing import Any
 
 def parse_bool(value: str | None) -> bool:
     """
-    Parse various boolean representations from CSV.
+    Determine whether a CSV string represents a true value.
     
-    Accepts: 'true', 'yes', '1', 't', 'y' (case-insensitive) as True
-    Everything else is False
+    Recognizes 'true', 'yes', '1', 't', and 'y' (case-insensitive, surrounding whitespace ignored) as true; treats None or any other value as false.
+    
+    Returns:
+        True if the input represents a true value, False otherwise.
     """
     if not value:
         return False
@@ -19,7 +21,13 @@ def parse_bool(value: str | None) -> bool:
 
 def parse_decimal(value: str | None) -> Decimal | None:
     """
-    Parse decimal value from CSV, handling empty strings and invalid formats.
+    Convert a string to a Decimal, returning None for empty or invalid inputs.
+    
+    Parameters:
+        value (str | None): String containing a numeric value, or None. Blank or whitespace-only strings are treated as missing.
+    
+    Returns:
+        Decimal | None: The parsed Decimal if parsing succeeds; `None` if `value` is `None`, blank, or not a valid decimal.
     """
     if not value or not value.strip():
         return None
@@ -31,7 +39,13 @@ def parse_decimal(value: str | None) -> Decimal | None:
 
 def parse_int(value: str | None) -> int | None:
     """
-    Parse integer value from CSV, handling empty strings and invalid formats.
+    Parse a string into an int, returning None for missing, blank, or non-integer input.
+    
+    Parameters:
+        value (str | None): The input string to parse; may be None or blank.
+    
+    Returns:
+        int | None: The parsed integer, or None if the input is None, empty, or not a valid integer.
     """
     if not value or not value.strip():
         return None
@@ -53,10 +67,15 @@ def safe_get(row: dict, key: str, default: Any = None) -> Any:
 
 def validate_required_fields(row: dict, required_fields: list[str], row_number: int) -> list[str]:
     """
-    Validate that all required fields are present and non-empty.
+    Check that each required field in a CSV row exists and contains a non-empty value.
+    
+    Parameters:
+        row (dict): Mapping of column names to values for a single CSV row.
+        required_fields (list[str]): Field names that must be present and non-blank in `row`.
+        row_number (int): 1-based row number used to prefix error messages.
     
     Returns:
-        List of error messages for missing fields
+        list[str]: Error messages of the form "Row {row_number}: Missing required field '{field}'" for each required field that is missing or blank.
     """
     errors = []
     for field in required_fields:

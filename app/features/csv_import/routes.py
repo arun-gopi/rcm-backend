@@ -39,21 +39,11 @@ async def import_services_csv(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Import service entries from CSV file.
+    Import service entries from a CSV file.
     
-    The CSV file should contain columns matching the CSVColumnMapping schema.
-    At minimum, the following columns are required:
-    - Id (service external ID)
-    - ClientId, ClientFirstName, ClientLastName
-    - ProviderId, ProviderFirstName, ProviderLastName
-    - OrganizationId (or provide organization_id parameter)
-    - DateOfService
-    - ProcedureCode
-    
-    The import is idempotent - records with duplicate external IDs will be skipped.
-    Clients and providers are automatically created if they don't exist.
-    
-    Returns detailed results including success/failure counts and error details.
+    Processes rows from the uploaded CSV, creating ServiceEntry and associated ServiceFinancials records while idempotently skipping entries with existing external IDs. Missing clients or providers are created automatically and in-memory caches minimize repeated lookups. Returns aggregated counts and up to 100 per-row error details.
+    Returns:
+        CSVImportResult: Summary of the import with fields `status`, `records_processed`, `records_inserted`, `records_skipped`, `records_failed`, and `errors` (list limited to 100 items).
     """
     if not file.filename or not file.filename.endswith(".csv"):
         raise HTTPException(status_code=400, detail="File must be a CSV (.csv)")
@@ -271,9 +261,9 @@ async def import_services_csv(
 @router.get("/column-mapping", response_model=CSVColumnMapping)
 async def get_column_mapping():
     """
-    Get the expected CSV column mapping.
+    Provide the expected CSV column mapping used for importing service records.
     
-    Use this endpoint to see what columns are expected in the CSV file
-    and their corresponding field names in the system.
+    Returns:
+        CSVColumnMapping: An instance describing CSV column names and their corresponding system field names.
     """
     return CSVColumnMapping()

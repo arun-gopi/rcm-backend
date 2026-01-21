@@ -8,7 +8,12 @@ import ulid
 from app.core.database.base import Base, TimestampMixin
 
 def generate_ulid() -> str:
-    """Generate a new ULID string."""
+    """
+    Generate a new ULID string.
+    
+    Returns:
+        ulid_str (str): A new ULID string.
+    """
     return ulid.ulid()
 
 class Provider(Base, TimestampMixin):
@@ -37,4 +42,10 @@ class Provider(Base, TimestampMixin):
     )
 
     def __repr__(self):
+        """
+        Return a developer-friendly string identifying the provider by id and full name.
+        
+        Returns:
+            str: String in the format "<Provider(id=<id>, name='<first_name> <last_name>')>".
+        """
         return f"<Provider(id={self.id}, name='{self.first_name} {self.last_name}')>"

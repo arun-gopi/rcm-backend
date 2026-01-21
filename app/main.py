@@ -88,7 +88,18 @@ async def startup():
 
 @app.get("/")
 async def root():
-    """Root endpoint - API health check."""
+    """
+    Provide API metadata and current health status.
+    
+    Returns:
+        dict: A mapping containing:
+            - message (str): Human-readable API name.
+            - version (str): API semantic version.
+            - status (str): Current service status (e.g., "online").
+            - docs (str|None): Documentation path when enabled, otherwise None.
+            - authentication (dict): Guidance including protected and public endpoint lists and auth info.
+            - features (dict): Descriptions of available feature areas (permissions, organizations, users, labels, clients, providers, payors, services, csv_import).
+    """
     return {
         "message": "RCM Backend API",
         "version": "0.1.0",
