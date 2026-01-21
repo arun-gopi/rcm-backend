@@ -87,6 +87,12 @@ class ServiceEntry(Base, TimestampMixin):
     )
 
     def __repr__(self):
+        """
+        Provide a short developer-facing string identifying the ServiceEntry.
+        
+        Returns:
+            str: String in the form "<ServiceEntry(id={id}, external_id='{external_id}', date={date_of_service})>".
+        """
         return f"<ServiceEntry(id={self.id}, external_id='{self.external_id}', date={self.date_of_service})>"
 
 
@@ -145,6 +151,12 @@ class ServiceFinancials(Base, TimestampMixin):
     service_entry = relationship("ServiceEntry", back_populates="financials")
 
     def __repr__(self):
+        """
+        Provide a concise debug representation of the ServiceFinancials instance.
+        
+        Returns:
+            str: A string containing the `service_entry_id` and `client_charge` values.
+        """
         return f"<ServiceFinancials(service_entry_id={self.service_entry_id}, client_charge={self.client_charge})>"
 
 
@@ -182,6 +194,12 @@ class ServiceAssignment(Base, TimestampMixin):
     )
 
     def __repr__(self):
+        """
+        Provide a concise debug-friendly string identifying the ServiceAssignment.
+        
+        Returns:
+            str: Representation in the form "<ServiceAssignment(id={id}, service_entry_id={service_entry_id}, assigned_to={assigned_to_user_id})>".
+        """
         return f"<ServiceAssignment(id={self.id}, service_entry_id={self.service_entry_id}, assigned_to={self.assigned_to_user_id})>"
 
 
@@ -216,4 +234,10 @@ class ServiceComment(Base, TimestampMixin):
     )
 
     def __repr__(self):
+        """
+        Provide a concise identifier string for the ServiceComment including id, service_entry_id, and comment_type.
+        
+        Returns:
+            str: The formatted representation `"<ServiceComment(id={id}, service_entry_id={service_entry_id}, type={comment_type})>"`.
+        """
         return f"<ServiceComment(id={self.id}, service_entry_id={self.service_entry_id}, type={self.comment_type})>"

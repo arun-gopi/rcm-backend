@@ -20,7 +20,18 @@ async def create_client(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new client."""
+    """
+    Create a new Client record from the provided data.
+    
+    Parameters:
+        client_data (ClientCreate): Data used to construct the new client.
+    
+    Returns:
+        Client: The created Client instance with populated fields (e.g., generated IDs).
+    
+    Raises:
+        HTTPException: 400 if a client with the same `external_client_id` already exists.
+    """
     # Check if external_client_id already exists
     if client_data.external_client_id:
         existing = await db.scalar(
@@ -42,7 +53,18 @@ async def get_client(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get a specific client by ID."""
+    """
+    Retrieve a client by its identifier.
+    
+    Parameters:
+        client_id (str): The ID of the client to retrieve.
+    
+    Returns:
+        Client: The Client instance matching `client_id`.
+    
+    Raises:
+        HTTPException: 404 if no client with `client_id` exists.
+    """
     client = await db.scalar(
         select(Client).where(Client.id == client_id)
     )
@@ -59,7 +81,17 @@ async def list_clients(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List all clients, optionally filtered by organization."""
+    """
+    Retrieve a paginated list of clients, optionally filtered by organization.
+    
+    Parameters:
+        organization_id (str | None): If provided, only clients belonging to this organization are returned.
+        skip (int): Number of records to skip (offset) for pagination.
+        limit (int): Maximum number of records to return.
+    
+    Returns:
+        list[Client]: A list of Client instances matching the query and pagination parameters.
+    """
     query = select(Client)
     if organization_id:
         query = query.where(Client.organization_id == organization_id)

@@ -20,7 +20,18 @@ async def create_provider(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Create a new provider."""
+    """
+    Create a new provider record, validating uniqueness of `external_provider_id` and `npi`.
+    
+    Parameters:
+        provider_data (ProviderCreate): Input data for the provider to create.
+    
+    Returns:
+        Provider: The newly created Provider instance.
+    
+    Raises:
+        HTTPException: If a provider with the same `external_provider_id` or `npi` already exists (status 400).
+    """
     # Check if external_provider_id already exists
     if provider_data.external_provider_id:
         existing = await db.scalar(
@@ -50,7 +61,15 @@ async def get_provider(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Get a specific provider by ID."""
+    """
+    Retrieve a provider by its identifier.
+    
+    Returns:
+        provider (Provider): The Provider instance matching the given `provider_id`.
+    
+    Raises:
+        HTTPException: 404 if no provider with the given `provider_id` exists.
+    """
     provider = await db.scalar(
         select(Provider).where(Provider.id == provider_id)
     )
@@ -67,7 +86,17 @@ async def list_providers(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List all providers, optionally filtered by organization."""
+    """
+    List providers, optionally filtered by organization and paginated.
+    
+    Parameters:
+    	organization_id (str | None): If provided, only providers belonging to this organization are returned.
+    	skip (int): Number of records to skip for pagination.
+    	limit (int): Maximum number of records to return.
+    
+    Returns:
+    	providers (list[Provider]): List of Provider records matching the filter and pagination parameters.
+    """
     query = select(Provider)
     if organization_id:
         query = query.where(Provider.organization_id == organization_id)

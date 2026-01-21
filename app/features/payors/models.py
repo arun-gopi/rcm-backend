@@ -38,4 +38,10 @@ class Payor(Base, TimestampMixin):
     )
 
     def __repr__(self):
+        """
+        Provide a concise developer-friendly representation of the Payor instance.
+        
+        Returns:
+            repr_str (str): String in the form "<Payor(id={id}, name='{name}')>" where `{id}` and `{name}` are the instance's values.
+        """
         return f"<Payor(id={self.id}, name='{self.name}')>"
